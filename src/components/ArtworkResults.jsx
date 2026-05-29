@@ -6,6 +6,9 @@ function ArtworkResults({
   favorites,
   onSelectArtwork,
   onToggleFavorite,
+  onLoadMore,
+  canLoadMore,
+  isLoadingMore,
 }) {
   if (totalResults <= 0) {
     return null;
@@ -34,6 +37,17 @@ function ArtworkResults({
             );
           })}
       </div>
+
+      {canLoadMore && (
+        <button
+          type="button"
+          className="load-more-button"
+          onClick={onLoadMore}
+          disabled={isLoadingMore}
+        >
+          {isLoadingMore ? "Chargement..." : "Afficher plus"}
+        </button>
+      )}
     </section>
   );
 }

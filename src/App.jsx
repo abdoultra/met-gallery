@@ -25,7 +25,10 @@ function App() {
   const [favorites, setFavorites] = useState([]);
   const [totalResults, setTotalResults] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState("");
+
+  const resultsPerPage = 10;
 
   useEffect(() => {
     const storedFavorites = localStorage.getItem("met-favorites");
@@ -56,6 +59,18 @@ function App() {
 
     fetchDepartments();
   }, []);
+
+  async function fetchArtworkDetails(ids) {
+    const artworksResponses = await Promise.all(
+      ids.map((id) =>
+        fetch(
+          `https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`,
+        ),
+      ),
+    );
+
+    return Promise.all(artworksResponses.map((response) => response.json()));
+  }
 
   async function handleSearch(event) {
     event.preventDefault();
@@ -131,20 +146,9 @@ function App() {
       setTotalResults(data.total);
       setObjectIds(data.objectIDs || []);
 
-      const detailsLimit = searchArtistOrCulture ? 80 : 10;
+      const detailsLimit = searchArtistOrCulture ? 80 : resultsPerPage;
       const firstIds = (data.objectIDs || []).slice(0, detailsLimit);
-
-      const artworksResponses = await Promise.all(
-        firstIds.map((id) =>
-          fetch(
-            `https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`,
-          ),
-        ),
-      );
-
-      const artworksData = await Promise.all(
-        artworksResponses.map((response) => response.json()),
-      );
+      const artworksData = await fetchArtworkDetails(firstIds);
 
       if (searchArtistOrCulture) {
         const searchValue = searchTerm.toLowerCase();
@@ -164,6 +168,30 @@ function App() {
       setError(error.message);
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function loadMoreArtworks() {
+    if (isLoadingMore || searchArtistOrCulture) {
+      return;
+    }
+
+    setIsLoadingMore(true);
+    setError("");
+
+    try {
+      const nextIds = objectIds.slice(
+        artworks.length,
+        artworks.length + resultsPerPage,
+      );
+
+      const nextArtworks = await fetchArtworkDetails(nextIds);
+
+      setArtworks([...artworks, ...nextArtworks]);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoadingMore(false);
     }
   }
 
@@ -259,6 +287,11 @@ function App() {
           favorites={favorites}
           onSelectArtwork={setSelectedArtwork}
           onToggleFavorite={toggleFavorite}
+          onLoadMore={loadMoreArtworks}
+          canLoadMore={
+            !searchArtistOrCulture && artworks.length < objectIds.length
+          }
+          isLoadingMore={isLoadingMore}
         />
       )}
 
