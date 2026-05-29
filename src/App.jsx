@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
 import "./App.css";
+import ArtworkDetail from "./components/ArtworkDetail";
+import ArtworkResults from "./components/ArtworkResults";
+import FavoritesList from "./components/FavoritesList";
+import Filters from "./components/Filters";
+import SearchForm from "./components/SearchForm";
 
 function App() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -191,247 +196,60 @@ function App() {
         Recherche des oeuvres dans la collection du Metropolitan Museum of Art.
       </p>
 
-      <form onSubmit={handleSearch}>
-        <input
-          type="text"
-          placeholder="Rechercher une oeuvre d'art..."
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-        />
-        <button type="submit">Rechercher</button>
-      </form>
+      <SearchForm
+        searchTerm={searchTerm}
+        onSearchTermChange={setSearchTerm}
+        onSubmit={handleSearch}
+      />
 
-      <section className="filters">
-        <h2>Filtres</h2>
+      <Filters
+        departments={departments}
+        selectedDepartment={selectedDepartment}
+        onSelectedDepartmentChange={setSelectedDepartment}
+        medium={medium}
+        onMediumChange={setMedium}
+        geoLocation={geoLocation}
+        onGeoLocationChange={setGeoLocation}
+        dateBegin={dateBegin}
+        onDateBeginChange={setDateBegin}
+        dateEnd={dateEnd}
+        onDateEndChange={setDateEnd}
+        searchInTitle={searchInTitle}
+        onSearchInTitleChange={setSearchInTitle}
+        searchInTags={searchInTags}
+        onSearchInTagsChange={setSearchInTags}
+        searchArtistOrCulture={searchArtistOrCulture}
+        onSearchArtistOrCultureChange={setSearchArtistOrCulture}
+        onlyHighlights={onlyHighlights}
+        onOnlyHighlightsChange={setOnlyHighlights}
+        onlyOnView={onlyOnView}
+        onOnlyOnViewChange={setOnlyOnView}
+        onResetFilters={resetFilters}
+      />
 
-        <div className="filters-grid">
-          <label>
-            Departement
-            <select
-              value={selectedDepartment}
-              onChange={(event) => setSelectedDepartment(event.target.value)}
-            >
-              <option value="">Tous les departements</option>
+      <FavoritesList
+        favorites={favorites}
+        onSelectArtwork={setSelectedArtwork}
+        onToggleFavorite={toggleFavorite}
+      />
 
-              {departments.map((department) => (
-                <option
-                  key={department.departmentId}
-                  value={department.departmentId}
-                >
-                  {department.displayName}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            Medium / type
-            <input
-              type="text"
-              placeholder="Paintings, Ceramics, Textiles..."
-              value={medium}
-              onChange={(event) => setMedium(event.target.value)}
-            />
-          </label>
-
-          <label>
-            Lieu
-            <input
-              type="text"
-              placeholder="France, Paris, China..."
-              value={geoLocation}
-              onChange={(event) => setGeoLocation(event.target.value)}
-            />
-          </label>
-
-          <label>
-            Date debut
-            <input
-              type="number"
-              placeholder="1700"
-              value={dateBegin}
-              onChange={(event) => setDateBegin(event.target.value)}
-            />
-          </label>
-
-          <label>
-            Date fin
-            <input
-              type="number"
-              placeholder="1800"
-              value={dateEnd}
-              onChange={(event) => setDateEnd(event.target.value)}
-            />
-          </label>
-        </div>
-
-        <div className="checkbox-group">
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={searchInTitle}
-              onChange={(event) => setSearchInTitle(event.target.checked)}
-            />
-            Chercher dans le titre
-          </label>
-
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={searchInTags}
-              onChange={(event) => setSearchInTags(event.target.checked)}
-            />
-            Chercher dans les tags
-          </label>
-
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={searchArtistOrCulture}
-              onChange={(event) =>
-                setSearchArtistOrCulture(event.target.checked)
-              }
-            />
-            Artiste ou culture
-          </label>
-
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={onlyHighlights}
-              onChange={(event) => setOnlyHighlights(event.target.checked)}
-            />
-            Oeuvres importantes
-          </label>
-
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={onlyOnView}
-              onChange={(event) => setOnlyOnView(event.target.checked)}
-            />
-            Exposees au musee
-          </label>
-        </div>
-
-        <button type="button" onClick={resetFilters}>
-          Reinitialiser les filtres
-        </button>
-      </section>
-
-      <section>
-        <h2>Favoris</h2>
-
-        {favorites.length === 0 ? (
-          <p>Aucun favori pour le moment.</p>
-        ) : (
-          <ul>
-            {favorites.map((favorite) => (
-              <li key={favorite.objectID}>
-                {favorite.title}
-                <button
-                  type="button"
-                  onClick={() => setSelectedArtwork(favorite)}
-                >
-                  Voir
-                </button>
-                <button type="button" onClick={() => toggleFavorite(favorite)}>
-                  Retirer
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {selectedArtwork && (
-        <section className="artwork-detail">
-          <button type="button" onClick={() => setSelectedArtwork(null)}>
-            Fermer
-          </button>
-
-          <img
-            src={selectedArtwork.primaryImageSmall}
-            alt={selectedArtwork.title}
-            className="detail-image"
-          />
-
-          <div>
-            <h2>{selectedArtwork.title}</h2>
-            <p>
-              <strong>Artiste :</strong>{" "}
-              {selectedArtwork.artistDisplayName || "Artiste inconnu"}
-            </p>
-            <p>
-              <strong>Date :</strong>{" "}
-              {selectedArtwork.objectDate || "Date inconnue"}
-            </p>
-            <p>
-              <strong>Departement :</strong>{" "}
-              {selectedArtwork.department || "Departement inconnu"}
-            </p>
-            <p>
-              <strong>Culture :</strong>{" "}
-              {selectedArtwork.culture || "Non renseigne"}
-            </p>
-            <p>
-              <strong>Technique :</strong>{" "}
-              {selectedArtwork.medium || "Non renseigne"}
-            </p>
-          </div>
-        </section>
-      )}
+      <ArtworkDetail
+        artwork={selectedArtwork}
+        onClose={() => setSelectedArtwork(null)}
+      />
 
       {isLoading && <p>Chargement...</p>}
 
       {error && <p>{error}</p>}
 
-      {!isLoading && totalResults > 0 && (
-        <section>
-          <h2>{totalResults} resultat(s)</h2>
-
-          <div className="artworks-grid">
-            {artworks
-              .filter((artwork) => artwork.primaryImageSmall)
-              .map((artwork) => {
-                const isFavorite = favorites.some(
-                  (favorite) => favorite.objectID === artwork.objectID,
-                );
-
-                return (
-                  <article className="artwork-card" key={artwork.objectID}>
-                    <img
-                      src={artwork.primaryImageSmall}
-                      alt={artwork.title}
-                      className="artwork-image"
-                    />
-
-                    <div className="artwork-info">
-                      <h3>{artwork.title}</h3>
-                      <p>{artwork.artistDisplayName || "Artiste inconnu"}</p>
-                      <p>{artwork.objectDate || "Date inconnue"}</p>
-
-                      <button
-                        type="button"
-                        onClick={() => setSelectedArtwork(artwork)}
-                      >
-                        Voir la fiche
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => toggleFavorite(artwork)}
-                      >
-                        {isFavorite
-                          ? "Retirer des favoris"
-                          : "Ajouter aux favoris"}
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
-          </div>
-        </section>
+      {!isLoading && (
+        <ArtworkResults
+          totalResults={totalResults}
+          artworks={artworks}
+          favorites={favorites}
+          onSelectArtwork={setSelectedArtwork}
+          onToggleFavorite={toggleFavorite}
+        />
       )}
 
       {!isLoading && totalResults === 0 && objectIds.length === 0 && (
