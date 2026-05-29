@@ -93,10 +93,6 @@ function App() {
         params.set("tags", "true");
       }
 
-      if (searchArtistOrCulture) {
-        params.set("artistOrCulture", "true");
-      }
-
       if (onlyHighlights) {
         params.set("isHighlight", "true");
       }
@@ -135,7 +131,8 @@ function App() {
       setTotalResults(data.total);
       setObjectIds(data.objectIDs || []);
 
-      const firstIds = (data.objectIDs || []).slice(0, 10);
+      const detailsLimit = searchArtistOrCulture ? 80 : 10;
+      const firstIds = (data.objectIDs || []).slice(0, detailsLimit);
 
       const artworksResponses = await Promise.all(
         firstIds.map((id) =>
@@ -149,7 +146,20 @@ function App() {
         artworksResponses.map((response) => response.json()),
       );
 
-      setArtworks(artworksData);
+      if (searchArtistOrCulture) {
+        const searchValue = searchTerm.toLowerCase();
+        const filteredArtworks = artworksData.filter((artwork) => {
+          const artist = artwork.artistDisplayName.toLowerCase();
+          const culture = artwork.culture.toLowerCase();
+
+          return artist.includes(searchValue) || culture.includes(searchValue);
+        });
+
+        setArtworks(filteredArtworks);
+        setTotalResults(filteredArtworks.length);
+      } else {
+        setArtworks(artworksData);
+      }
     } catch (error) {
       setError(error.message);
     } finally {

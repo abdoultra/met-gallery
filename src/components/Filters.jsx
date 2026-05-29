@@ -116,7 +116,7 @@ function Filters({
               onSearchArtistOrCultureChange(event.target.checked)
             }
           />
-          Artiste ou culture
+          Filtrer par artiste ou culture
         </label>
 
         <label className="checkbox-label">
