@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 
 function App() {
@@ -11,8 +11,17 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    const storedFavorites = localStorage.getItem("met-favorites");
+
+    if (storedFavorites) {
+      setFavorites(JSON.parse(storedFavorites));
+    }
+  }, []);
+
   async function handleSearch(event) {
     event.preventDefault();
+
     if (searchTerm.trim() === "") {
       return;
     }
@@ -37,6 +46,7 @@ function App() {
 
       setTotalResults(data.total);
       setObjectIds(data.objectIDs || []);
+
       const firstIds = (data.objectIDs || []).slice(0, 10);
 
       const artworksResponses = await Promise.all(
@@ -64,15 +74,18 @@ function App() {
       (favorite) => favorite.objectID === artwork.objectID,
     );
 
+    let updatedFavorites;
+
     if (isAlreadyFavorite) {
-      const updatedFavorites = favorites.filter(
+      updatedFavorites = favorites.filter(
         (favorite) => favorite.objectID !== artwork.objectID,
       );
-
-      setFavorites(updatedFavorites);
     } else {
-      setFavorites([...favorites, artwork]);
+      updatedFavorites = [...favorites, artwork];
     }
+
+    setFavorites(updatedFavorites);
+    localStorage.setItem("met-favorites", JSON.stringify(updatedFavorites));
   }
 
   return (
@@ -91,71 +104,77 @@ function App() {
         />
         <button type="submit">Rechercher</button>
       </form>
-      <section>
-  <h2>Favoris</h2>
 
-  {favorites.length === 0 ? (
-    <p>Aucun favori pour le moment.</p>
-  ) : (
-    <ul>
-      {favorites.map((favorite) => (
-        <li key={favorite.objectID}>
-          {favorite.title}
-          <button type="button" onClick={() => setSelectedArtwork(favorite)}>
-            Voir
+      <section>
+        <h2>Favoris</h2>
+
+        {favorites.length === 0 ? (
+          <p>Aucun favori pour le moment.</p>
+        ) : (
+          <ul>
+            {favorites.map((favorite) => (
+              <li key={favorite.objectID}>
+                {favorite.title}
+                <button
+                  type="button"
+                  onClick={() => setSelectedArtwork(favorite)}
+                >
+                  Voir
+                </button>
+                <button type="button" onClick={() => toggleFavorite(favorite)}>
+                  Retirer
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {selectedArtwork && (
+        <section className="artwork-detail">
+          <button type="button" onClick={() => setSelectedArtwork(null)}>
+            Fermer
           </button>
-          <button type="button" onClick={() => toggleFavorite(favorite)}>
-            Retirer
-          </button>
-        </li>
-      ))}
-    </ul>
-  )}
-</section>
+
+          <img
+            src={selectedArtwork.primaryImageSmall}
+            alt={selectedArtwork.title}
+            className="detail-image"
+          />
+
+          <div>
+            <h2>{selectedArtwork.title}</h2>
+            <p>
+              <strong>Artiste :</strong>{" "}
+              {selectedArtwork.artistDisplayName || "Artiste inconnu"}
+            </p>
+            <p>
+              <strong>Date :</strong>{" "}
+              {selectedArtwork.objectDate || "Date inconnue"}
+            </p>
+            <p>
+              <strong>Departement :</strong>{" "}
+              {selectedArtwork.department || "Departement inconnu"}
+            </p>
+            <p>
+              <strong>Culture :</strong>{" "}
+              {selectedArtwork.culture || "Non renseigne"}
+            </p>
+            <p>
+              <strong>Technique :</strong>{" "}
+              {selectedArtwork.medium || "Non renseigne"}
+            </p>
+          </div>
+        </section>
+      )}
+
       {isLoading && <p>Chargement...</p>}
 
       {error && <p>{error}</p>}
 
       {!isLoading && totalResults > 0 && (
         <section>
-          <h2>{totalResults} résultat(s)</h2>
-          {selectedArtwork && (
-            <section className="artwork-detail">
-              <button type="button" onClick={() => setSelectedArtwork(null)}>
-                Fermer
-              </button>
-
-              <img
-                src={selectedArtwork.primaryImageSmall}
-                alt={selectedArtwork.title}
-                className="detail-image"
-              />
-
-              <div>
-                <h2>{selectedArtwork.title}</h2>
-                <p>
-                  <strong>Artiste :</strong>{" "}
-                  {selectedArtwork.artistDisplayName || "Artiste inconnu"}
-                </p>
-                <p>
-                  <strong>Date :</strong>{" "}
-                  {selectedArtwork.objectDate || "Date inconnue"}
-                </p>
-                <p>
-                  <strong>Département :</strong>{" "}
-                  {selectedArtwork.department || "Département inconnu"}
-                </p>
-                <p>
-                  <strong>Culture :</strong>{" "}
-                  {selectedArtwork.culture || "Non renseigné"}
-                </p>
-                <p>
-                  <strong>Technique :</strong>{" "}
-                  {selectedArtwork.medium || "Non renseigné"}
-                </p>
-              </div>
-            </section>
-          )}
+          <h2>{totalResults} resultat(s)</h2>
 
           <div className="artworks-grid">
             {artworks
@@ -202,7 +221,7 @@ function App() {
       )}
 
       {!isLoading && totalResults === 0 && objectIds.length === 0 && (
-        <p>Aucun résultat pour le moment.</p>
+        <p>Aucun resultat pour le moment.</p>
       )}
     </main>
   );
