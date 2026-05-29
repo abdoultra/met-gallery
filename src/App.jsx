@@ -3,6 +3,17 @@ import "./App.css";
 
 function App() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchInTitle, setSearchInTitle] = useState(false);
+  const [searchInTags, setSearchInTags] = useState(false);
+  const [searchArtistOrCulture, setSearchArtistOrCulture] = useState(false);
+  const [onlyHighlights, setOnlyHighlights] = useState(false);
+  const [onlyOnView, setOnlyOnView] = useState(false);
+  const [departments, setDepartments] = useState([]);
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [medium, setMedium] = useState("");
+  const [geoLocation, setGeoLocation] = useState("");
+  const [dateBegin, setDateBegin] = useState("");
+  const [dateEnd, setDateEnd] = useState("");
   const [objectIds, setObjectIds] = useState([]);
   const [artworks, setArtworks] = useState([]);
   const [selectedArtwork, setSelectedArtwork] = useState(null);
@@ -19,10 +30,40 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+    async function fetchDepartments() {
+      try {
+        const response = await fetch(
+          "https://collectionapi.metmuseum.org/public/collection/v1/departments",
+        );
+
+        if (!response.ok) {
+          throw new Error("Impossible de charger les departements");
+        }
+
+        const data = await response.json();
+
+        setDepartments(data.departments || []);
+      } catch (error) {
+        setError(error.message);
+      }
+    }
+
+    fetchDepartments();
+  }, []);
+
   async function handleSearch(event) {
     event.preventDefault();
 
     if (searchTerm.trim() === "") {
+      return;
+    }
+
+    if (
+      (dateBegin.trim() !== "" && dateEnd.trim() === "") ||
+      (dateBegin.trim() === "" && dateEnd.trim() !== "")
+    ) {
+      setError("Indique une date de debut et une date de fin.");
       return;
     }
 
@@ -34,8 +75,50 @@ function App() {
     setTotalResults(0);
 
     try {
+      const params = new URLSearchParams();
+
+      params.set("hasImages", "true");
+      params.set("q", searchTerm);
+
+      if (searchInTitle) {
+        params.set("title", "true");
+      }
+
+      if (searchInTags) {
+        params.set("tags", "true");
+      }
+
+      if (searchArtistOrCulture) {
+        params.set("artistOrCulture", "true");
+      }
+
+      if (onlyHighlights) {
+        params.set("isHighlight", "true");
+      }
+
+      if (onlyOnView) {
+        params.set("isOnView", "true");
+      }
+
+      if (selectedDepartment !== "") {
+        params.set("departmentId", selectedDepartment);
+      }
+
+      if (medium.trim() !== "") {
+        params.set("medium", medium.trim());
+      }
+
+      if (geoLocation.trim() !== "") {
+        params.set("geoLocation", geoLocation.trim());
+      }
+
+      if (dateBegin.trim() !== "" && dateEnd.trim() !== "") {
+        params.set("dateBegin", dateBegin.trim());
+        params.set("dateEnd", dateEnd.trim());
+      }
+
       const response = await fetch(
-        `https://collectionapi.metmuseum.org/public/collection/v1/search?hasImages=true&q=${encodeURIComponent(searchTerm)}`,
+        `https://collectionapi.metmuseum.org/public/collection/v1/search?${params.toString()}`,
       );
 
       if (!response.ok) {
@@ -88,6 +171,19 @@ function App() {
     localStorage.setItem("met-favorites", JSON.stringify(updatedFavorites));
   }
 
+  function resetFilters() {
+    setSearchInTitle(false);
+    setSearchInTags(false);
+    setSearchArtistOrCulture(false);
+    setOnlyHighlights(false);
+    setOnlyOnView(false);
+    setSelectedDepartment("");
+    setMedium("");
+    setGeoLocation("");
+    setDateBegin("");
+    setDateEnd("");
+  }
+
   return (
     <main>
       <h1>MET Art Explorer</h1>
@@ -104,6 +200,124 @@ function App() {
         />
         <button type="submit">Rechercher</button>
       </form>
+
+      <section className="filters">
+        <h2>Filtres</h2>
+
+        <div className="filters-grid">
+          <label>
+            Departement
+            <select
+              value={selectedDepartment}
+              onChange={(event) => setSelectedDepartment(event.target.value)}
+            >
+              <option value="">Tous les departements</option>
+
+              {departments.map((department) => (
+                <option
+                  key={department.departmentId}
+                  value={department.departmentId}
+                >
+                  {department.displayName}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Medium / type
+            <input
+              type="text"
+              placeholder="Paintings, Ceramics, Textiles..."
+              value={medium}
+              onChange={(event) => setMedium(event.target.value)}
+            />
+          </label>
+
+          <label>
+            Lieu
+            <input
+              type="text"
+              placeholder="France, Paris, China..."
+              value={geoLocation}
+              onChange={(event) => setGeoLocation(event.target.value)}
+            />
+          </label>
+
+          <label>
+            Date debut
+            <input
+              type="number"
+              placeholder="1700"
+              value={dateBegin}
+              onChange={(event) => setDateBegin(event.target.value)}
+            />
+          </label>
+
+          <label>
+            Date fin
+            <input
+              type="number"
+              placeholder="1800"
+              value={dateEnd}
+              onChange={(event) => setDateEnd(event.target.value)}
+            />
+          </label>
+        </div>
+
+        <div className="checkbox-group">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={searchInTitle}
+              onChange={(event) => setSearchInTitle(event.target.checked)}
+            />
+            Chercher dans le titre
+          </label>
+
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={searchInTags}
+              onChange={(event) => setSearchInTags(event.target.checked)}
+            />
+            Chercher dans les tags
+          </label>
+
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={searchArtistOrCulture}
+              onChange={(event) =>
+                setSearchArtistOrCulture(event.target.checked)
+              }
+            />
+            Artiste ou culture
+          </label>
+
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={onlyHighlights}
+              onChange={(event) => setOnlyHighlights(event.target.checked)}
+            />
+            Oeuvres importantes
+          </label>
+
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={onlyOnView}
+              onChange={(event) => setOnlyOnView(event.target.checked)}
+            />
+            Exposees au musee
+          </label>
+        </div>
+
+        <button type="button" onClick={resetFilters}>
+          Reinitialiser les filtres
+        </button>
+      </section>
 
       <section>
         <h2>Favoris</h2>
